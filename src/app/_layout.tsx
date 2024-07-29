@@ -1,10 +1,24 @@
 import '@/styles/global.css'
 
 import {Slot} from "expo-router";
-import {View} from "react-native";
+import {StatusBar, View} from "react-native";
+import {Inter_400Regular, Inter_500Medium, Inter_600SemiBold, useFonts} from "@expo-google-fonts/inter";
+import {Sacramento_400Regular} from "@expo-google-fonts/sacramento"
+import Loading from "@/components/loading";
 export default function Layout() {
+    const [fontsLoaded] = useFonts({
+        Inter_500Medium,
+        Inter_400Regular,
+        Inter_600SemiBold,
+        Sacramento_400Regular
+    })
+    
+    if (!fontsLoaded) {
+        return <Loading/>
+    } 
     return (
         <View className="flex-1 bg-zinc-950">
+            <StatusBar barStyle="light-content" backgroundColor="transparent" translucent></StatusBar>
             <Slot/>
         </View>
     )
