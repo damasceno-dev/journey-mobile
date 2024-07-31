@@ -67,9 +67,10 @@ function orderStartsAtAndEndsAt({
 }
 
 function formatDatesInText({ startsAt, endsAt }: FormatDatesInText) {
-  const formatted = `${startsAt.date()} à ${endsAt.date()} de ${startsAt.format(
+  const formatted = startsAt.month() === endsAt.month() ? `${startsAt.date()} à ${endsAt.date()} de ${startsAt.format(
     "MMMM"
-  )}`
+  )}` : `${startsAt.date()} de ${startsAt.format("MMMM")} à ${endsAt.date()} de ${endsAt.format("MMMM")}`
+      
 
   return formatted
 }
