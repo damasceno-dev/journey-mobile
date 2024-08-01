@@ -1,6 +1,6 @@
-import dayjs, { Dayjs } from "dayjs"
-import { DateData, CalendarUtils } from "react-native-calendars"
-import { MarkedDates } from "react-native-calendars/src/types"
+import dayjs, {Dayjs} from "dayjs"
+import {CalendarUtils, DateData} from "react-native-calendars"
+import {MarkedDates} from "react-native-calendars/src/types"
 
 type OrderStartsAtAndEndsAt = {
   startsAt?: DateData
@@ -49,8 +49,8 @@ function orderStartsAtAndEndsAt({
       endsAt: startsAt,
       dates: getIntervalDates(selectedDay, startsAt),
       formatDatesInText: formatDatesInText({
-        startsAt: dayjs(selectedDay.dateString),
-        endsAt: dayjs(startsAt.dateString),
+        startsAt: dayjs(selectedDay.dateString).utc(),
+        endsAt: dayjs(startsAt.dateString).utc(),
       }),
     }
   }
@@ -60,24 +60,21 @@ function orderStartsAtAndEndsAt({
     endsAt: selectedDay,
     dates: getIntervalDates(startsAt, selectedDay),
     formatDatesInText: formatDatesInText({
-      startsAt: dayjs(startsAt.dateString),
-      endsAt: dayjs(selectedDay.dateString),
+      startsAt: dayjs(startsAt.dateString).utc(),
+      endsAt: dayjs(selectedDay.dateString).utc(),
     }),
   }
 }
 
 function formatDatesInText({ startsAt, endsAt }: FormatDatesInText) {
-  const formatted = startsAt.month() === endsAt.month() ? `${startsAt.date()} à ${endsAt.date()} de ${startsAt.format(
-    "MMMM"
-  )}` : `${startsAt.date()} de ${startsAt.format("MMMM")} à ${endsAt.date()} de ${endsAt.format("MMMM")}`
-      
-
-  return formatted
+  return startsAt.utc().month() === endsAt.utc().month() ? `${startsAt.utc().date()} a ${endsAt.utc().date()} de ${startsAt.utc().format(
+      "MMMM"
+  )}` : `${startsAt.utc().date()} de ${startsAt.utc().format("MMMM")} a ${endsAt.utc().date()} de ${endsAt.utc().format("MMMM")}`
 }
 
 function getIntervalDates(startsAt: DateData, endsAt: DateData): MarkedDates {
-  const start = dayjs(startsAt.dateString)
-  const end = dayjs(endsAt.dateString)
+  const start = dayjs(startsAt.dateString).utc();
+  const end = dayjs(endsAt.dateString).utc();
 
   let currentDate = start
   const datesArray: string[] = []
@@ -101,8 +98,22 @@ function getIntervalDates(startsAt: DateData, endsAt: DateData): MarkedDates {
   return interval
 }
 
+function convertStringToDateData(dateString: string): DateData {
+  
+  const date = new Date(dateString);
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1, // Months are zero-based in JavaScript
+    day: date.getDate(),
+    timestamp: date.getTime(),
+    dateString: date.toISOString().split('T')[0], // Get the date part of the ISO string
+  };
+}
+
 export const calendarUtils = {
   orderStartsAtAndEndsAt,
   formatDatesInText,
   dateToCalendarDate: CalendarUtils.getCalendarDateString,
+  convertStringToDateData,
+  getIntervalDates
 }

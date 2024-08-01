@@ -36,7 +36,6 @@ async function getById(id: string): Promise<TripDetails> {
 
 async function create({name,startDate, endDate, activities, participants} : TripCreate) : Promise<TripDetails> {
     try {
-        console.log(name,  startDate, endDate)
       const {data} = await api.post("/Trip/register", {
           name,
           startDate,
@@ -53,7 +52,6 @@ async function create({name,startDate, endDate, activities, participants} : Trip
             } catch (error) {
                 console.log("Erro ao salvar as atividades da viagem.", error);
                 console.log(activity);
-              throw error;
             }
             
         }
@@ -69,7 +67,6 @@ async function create({name,startDate, endDate, activities, participants} : Trip
             } catch (error) {
                 console.log("Erro ao salvar os participantes da viagem.", error);
                 console.log(participant);
-                throw error;
             }
         }
       }
@@ -89,4 +86,15 @@ async function create({name,startDate, endDate, activities, participants} : Trip
     }
 }
 
-export const tripServer = {getById, create}
+async function update({id, name, startDate, endDate}:Omit<TripDetails, "activities" | "participants">) {
+    try {
+      await api.put(`/Trip/${id}/update`, {
+          name, startDate, endDate
+      });
+    } catch (error) {
+        console.log(error)
+      throw error;
+    }
+}
+
+export const tripServer = {getById, create, update}
