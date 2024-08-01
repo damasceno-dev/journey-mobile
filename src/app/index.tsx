@@ -1,5 +1,5 @@
 import {Alert, Image, Keyboard, Text, View} from "react-native";
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Input} from "@/components/input";
 import {
     ArrowRight,
@@ -19,6 +19,10 @@ import {DateData} from "react-native-calendars";
 import dayjs from "dayjs";
 import {GuestData} from "@/components/email";
 import {validateInput} from "@/utils/validateInput";
+import {tripStorage} from "@/storage/trips";
+import {router} from "expo-router";
+import {Participant, tripServer} from "@/server/trip-server";
+import Loading from "@/components/loading";
 
 enum StepForm {
     TRIP_DETAILS = 1,
@@ -31,21 +35,20 @@ enum ModalEnum {
     GUESTS = 2
 }
 
-type GuestsToInvite = {
-    name: string;
-    email: string;
-};
-
 export default function Index() {
+    
+    
+    const [isCreatingTrip, setIsCreatingTrip] = useState(false);
+    const [isGettingTrip, setIsGettingTrip] = useState(true);
     
     const [stepForm, setStepForm] = useState(StepForm.TRIP_DETAILS);
     const [selectedDates, setSelectedDates] = useState({} as DatesSelected)
     const [showModal, setShowModal] = useState(ModalEnum.NONE);
     const [destination, setDestination] = useState("");
-    
-    const [guestsToInvite, setGuestsToInvite] = useState<GuestsToInvite[]>([])
+    const [guestsToInvite, setGuestsToInvite] = useState<Participant[]>([])
     const [guestName, setGuestName] = useState("");
     const [guestEmail, setGuestEmail] = useState("");
+    
     function handleNextStepForm() {
         if (destination.trim().length === 0 || !selectedDates.startsAt || !selectedDates.endsAt) {
             return Alert.alert("Detalhes da viagem", "Preencha todas informações da viagem para prosseguir.")
@@ -54,6 +57,11 @@ export default function Index() {
         if (stepForm === StepForm.TRIP_DETAILS) {
             return setStepForm(StepForm.ADD_EMAIL);
         }
+        
+        Alert.alert("Nova viagem", "Confirmar viagem?", [
+            {text: "Sim", onPress: createTrip},
+            {text: "Não", style: "cancel"},
+        ])
     }
     
     function handleSelectedDate(selectedDay: DateData) {
@@ -87,13 +95,71 @@ export default function Index() {
     
     function handleGuestsText() {
         if (guestsToInvite.length === 1) {
-            return "1 pessoa convidada"
+            return "1 pessoa convidada";
         } else if (guestsToInvite.length > 1) {
-            return `${guestsToInvite.length} pessoas convidadas`
+            return `${guestsToInvite.length} pessoas convidadas`;
         } else {
-            return ""
+            return "";
         }
     }
+    
+    async function saveTripOnAsyncStorage(tripId: string) {
+        try {
+          await tripStorage.save(tripId);
+          router.navigate(`/trip/${tripId}`)
+        } catch (error) {
+          Alert.alert("Salvar viagem", "Não foi possível salvar o id da viagem no dispositivo")
+            throw error;
+        }
+    }
+    
+    async function createTrip() {
+        try {
+          setIsCreatingTrip(true);
+          console.log(selectedDates.startsAt)
+          const newTrip = await tripServer.create({
+              name: destination,
+              startDate: selectedDates.startsAt!.dateString,
+              endDate: selectedDates.endsAt!.dateString,
+              participants: guestsToInvite
+          })
+            
+            Alert.alert("Nova viagem", "Viagem criada com sucesso!", [
+                {text: "OK. Continuar.",onPress: () => saveTripOnAsyncStorage(newTrip.id)}
+            ])
+        } catch (error) {
+          console.log(error);
+          setIsCreatingTrip(false)
+        }
+    }
+    
+    async function getTrip() {
+        try {
+          const tripId = await tripStorage.get();
+          if (!tripId) {
+              return setIsGettingTrip(false)
+          }
+          
+          const trip = await tripServer.getById(tripId)
+           console.log(trip)
+           if (trip) {
+               return router.navigate(`trip/${trip.id}`)
+           } 
+        } catch (error) {
+            setIsGettingTrip(false)
+            console.log(error)
+          throw error;
+        }
+    }
+    
+    useEffect(() => {
+        getTrip();
+    }, [])
+    
+    if (isGettingTrip) {
+        return <Loading/>
+    }
+    
     
     return (
         <View className="flex-1 items-center justify-center">
@@ -147,7 +213,7 @@ export default function Index() {
                         </Input>
                    </> 
                 )}
-                <Button onPress={handleNextStepForm}>
+                <Button onPress={handleNextStepForm} isLoading={isCreatingTrip}>
                     <Button.Title>{stepForm=== StepForm.TRIP_DETAILS ? "Continuar" : "Confirmar viagem"}</Button.Title>
                     <ArrowRight color={colors.lime[950]} size={20}/>
                 </Button>

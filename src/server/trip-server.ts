@@ -1,6 +1,4 @@
 import {api} from "@/server/api";
-import Id from "ajv/lib/vocabularies/core/id";
-import {awaitExpression} from "@babel/types";
 
 export type Activity = {
     id: string;
@@ -10,10 +8,10 @@ export type Activity = {
 }
 
 export type Participant = {
-    id: string;
+    id?: string;
     name: string;
     email: string;
-    isConfirmed: boolean;
+    isConfirmed?: boolean;
 }
 
 export type TripDetails = {
@@ -27,17 +25,18 @@ export type TripDetails = {
 
 export type TripCreate = Omit<TripDetails, "id" >
 
-async function getById(id: string) {
+async function getById(id: string): Promise<TripDetails> {
     try {
-      const {data} = await api.get<{trip: TripDetails}>(`/Trip/${id}`);
-      return data.trip;
+      const {data} = await api.get<TripDetails>(`/Trip/${id}`);
+        return data;
     } catch (error) {
       throw error;
     }
 }
 
-async function create({name,startDate, endDate, activities, participants} : TripCreate) {
+async function create({name,startDate, endDate, activities, participants} : TripCreate) : Promise<TripDetails> {
     try {
+        console.log(name,  startDate, endDate)
       const {data} = await api.post("/Trip/register", {
           name,
           startDate,
@@ -46,25 +45,46 @@ async function create({name,startDate, endDate, activities, participants} : Trip
       
       if (activities && activities.length > 0) {
         for (const activity of activities) {
-            await api.post(`/TripActivities/${data.id}/register`, {
-                name: activity.name,
-                date: activity.date,
-            })
+            try {
+                await api.post(`/TripActivities/${data.id}/register`, {
+                    name: activity.name,
+                    date: activity.date,
+                })
+            } catch (error) {
+                console.log("Erro ao salvar as atividades da viagem.", error);
+                console.log(activity);
+              throw error;
+            }
+            
         }
       }
       
       if (participants && participants.length > 0) {
         for (const participant of participants) {
-            await api.post(`/TripParticipants/${data.id}/register`, {
-                name: participant.name,
-                email: participant.email,
-            })
+            try {
+                await api.post(`/TripParticipants/${data.id}/register`, {
+                    name: participant.name,
+                    email: participant.email,
+                });
+            } catch (error) {
+                console.log("Erro ao salvar os participantes da viagem.", error);
+                console.log(participant);
+                throw error;
+            }
         }
       }
       
-      return data.id;
+  return {
+          id: data.id,
+          name: data.name,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          activities: activities,
+          participants: participants,
+      };
       
     } catch (error) {
+      console.log(error);
       throw error;
     }
 }
