@@ -21,8 +21,9 @@ import {GuestData} from "@/components/email";
 import {validateInput} from "@/utils/validateInput";
 import {tripStorage} from "@/storage/trips";
 import {router} from "expo-router";
-import {Participant, tripServer} from "@/server/trip-server";
+import {tripServer} from "@/server/trip-server";
 import Loading from "@/components/loading";
+import {Participant} from "@/server/participants-server";
 
 enum StepForm {
     TRIP_DETAILS = 1,
@@ -116,7 +117,6 @@ export default function Index() {
     async function createTrip() {
         try {
           setIsCreatingTrip(true);
-          console.log(selectedDates.startsAt)
           const newTrip = await tripServer.create({
               name: destination,
               startDate: selectedDates.startsAt!.dateString,

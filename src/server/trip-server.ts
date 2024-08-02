@@ -1,18 +1,7 @@
 import {api} from "@/server/api";
+import {Activity} from "@/server/activities-server";
+import {Participant, participantsServer} from "@/server/participants-server";
 
-export type Activity = {
-    id: string;
-    name: string;
-    date: string;
-    status: boolean
-}
-
-export type Participant = {
-    id?: string;
-    name: string;
-    email: string;
-    isConfirmed?: boolean;
-}
 
 export type TripDetails = {
     id: string;
@@ -34,7 +23,7 @@ async function getById(id: string): Promise<TripDetails> {
     }
 }
 
-async function create({name,startDate, endDate, activities, participants} : TripCreate) : Promise<TripDetails> {
+async function create({name,startDate, endDate, participants} : TripCreate) : Promise<TripDetails> {
     try {
       const {data} = await api.post("/Trip/register", {
           name,
@@ -42,41 +31,17 @@ async function create({name,startDate, endDate, activities, participants} : Trip
           endDate
       });
       
-      if (activities && activities.length > 0) {
-        for (const activity of activities) {
-            try {
-                await api.post(`/TripActivities/${data.id}/register`, {
-                    name: activity.name,
-                    date: activity.date,
-                })
-            } catch (error) {
-                console.log("Erro ao salvar as atividades da viagem.", error);
-                console.log(activity);
-            }
-            
-        }
-      }
-      
-      if (participants && participants.length > 0) {
-        for (const participant of participants) {
-            try {
-                await api.post(`/TripParticipants/${data.id}/register`, {
-                    name: participant.name,
-                    email: participant.email,
-                });
-            } catch (error) {
-                console.log("Erro ao salvar os participantes da viagem.", error);
-                console.log(participant);
+        if (participants && participants.length > 0) {
+            for (const participant of participants) {
+                const participantCreate = {tripId: data.id, name: participant.name, email: participant.email}
+                await participantsServer.create(participantCreate)
             }
         }
-      }
-      
   return {
           id: data.id,
           name: data.name,
           startDate: data.startDate,
           endDate: data.endDate,
-          activities: activities,
           participants: participants,
       };
       
