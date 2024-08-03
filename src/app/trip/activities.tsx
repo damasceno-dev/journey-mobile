@@ -27,13 +27,14 @@ export type TripActivities = {
     title: {
         dayNumber: number;
         dayName: string;
+        monthNamesShort: string;
     }
     data:(Activity & { hour: string })[]
 }
 
 
 export function Activities({tripDetails} : Props) {
-    
+    console.log(tripDetails)
     const [isCreatingActivity, setIsCreatingActivity] = useState(false);
     const [isLoadingActivities, setIsLoadingActivities] = useState(false)
     const [showModal, setShowModal] = useState(ModalEnum.NONE);
@@ -79,7 +80,8 @@ export function Activities({tripDetails} : Props) {
             const activitiesToSectionList = activities && groupedActivities.map(dayActivity => ({
                 title: {
                     dayNumber: dayjs(dayActivity.date).date(),
-                    dayName: dayjs(dayActivity.date).format("dddd").replace("-feira", "")
+                    dayName: dayjs(dayActivity.date).format("dddd").replace("-feira", ""),
+                    monthNamesShort: dayjs(dayActivity.date).format("MMM"),
                 },
                 data: dayActivity.activities.map(activity => ({
                     ...activity,
@@ -111,25 +113,18 @@ export function Activities({tripDetails} : Props) {
     }
 
     function confirmUpdateActivity(id: string, name: string) {
-        Alert.alert(
+        return Alert.alert(
             "Atualizar atividade",
-            `Já completou a atividade "${name}"`,
+            `Já completou a atividade "${name}"?`,
             [
-                {
-                    onPress: () => {},
-                    text: "Não",
-                    style: "cancel"
-                },
-                {
-                    text: "Sim",
-                    onPress: () => handleUpdateActivity(id)
-                }
-            ],
-            { cancelable: false }
+                    {text: "Não",style: "cancel"},
+                    {text: "Sim",onPress: () => handleUpdateActivity(id)}
+                    ]
         );
     }
     
     useEffect(() => {
+        
         getActivities();
     }, []);
 
@@ -159,10 +154,11 @@ export function Activities({tripDetails} : Props) {
                             />
                         }
                         renderSectionHeader={({section}) => (
-                        <View className="w-full">
+                        <View className="w-full flex flex-row items-center justify-between">
                             <Text className="text-zinc-50 text-4xl font-sacramento py-2 mt-4">Dia {section.title.dayNumber + " - "}
                                 <Text className="text-zinc-50 text-3xl capitalize underline">{section.title.dayName}</Text>
                             </Text>
+                            <Text className="text-zinc-50 text-xl font-regular">{section.title.monthNamesShort}</Text>
                         </View>
                     )}
                     />
@@ -225,9 +221,9 @@ export function Activities({tripDetails} : Props) {
                     <Calendar
                         onDayPress={(day) => setActivityDate(day.dateString)}
                         markedDates={{[activityDate]: {selected: true}}}
-                        initialDate={tripDetails.startDate}
-                        minDate={tripDetails.startDate}
-                        maxDate={tripDetails.endDate}
+                        initialDate={dayjs(tripDetails.startDate).utc().format("YYYY-MM-DD").toString()}
+                        minDate={dayjs(tripDetails.startDate).utc().format("YYYY-MM-DD").toString()}
+                        maxDate={dayjs(tripDetails.endDate).format("YYYY-MM-DD").toString()}
                     />
                     <Button onPress={() => setShowModal(ModalEnum.NEW_ACTIVITY)}>
                         <Button.Title>Confirmar</Button.Title>

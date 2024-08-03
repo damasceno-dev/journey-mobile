@@ -1,5 +1,6 @@
 import {api} from "@/server/api";
-import { TripDetails} from "@/server/trip-server";
+import {TripDetails} from "@/server/trip-server";
+import {AxiosError} from "axios";
 
 export type Activity = {
     id: string
@@ -21,6 +22,9 @@ async function create({tripId, date, name} : ActivityCreate) {
     } catch (error) {
         console.log("Erro ao salvar as atividades da viagem.", error);
         console.log({tripId, date, name});
+        if (error instanceof AxiosError && error.response) {
+            console.log( error.response.data.errors);
+        }
         throw error
     }
 }

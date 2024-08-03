@@ -117,10 +117,16 @@ export default function Index() {
     async function createTrip() {
         try {
           setIsCreatingTrip(true);
+          
+          console.log( destination,
+                         selectedDates.startsAt!.dateString,
+                         selectedDates.endsAt!.dateString,
+                         guestsToInvite)
+            // "T23:59:59Z"
           const newTrip = await tripServer.create({
               name: destination,
               startDate: selectedDates.startsAt!.dateString,
-              endDate: selectedDates.endsAt!.dateString,
+              endDate: selectedDates.endsAt!.dateString + "T23:59:59Z",
               participants: guestsToInvite
           })
             
@@ -130,6 +136,8 @@ export default function Index() {
         } catch (error) {
           console.log(error);
           setIsCreatingTrip(false)
+        } finally {
+            setIsCreatingTrip(false)
         }
     }
     

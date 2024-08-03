@@ -1,5 +1,4 @@
 import {api} from "@/server/api";
-import {Activity} from "@/server/activities-server";
 import {TripDetails} from "@/server/trip-server";
 
 
