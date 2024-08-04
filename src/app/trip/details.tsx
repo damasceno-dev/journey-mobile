@@ -8,6 +8,7 @@ import {Modal} from "@/components/modal";
 import {Input} from "@/components/input";
 import {validateInput} from "@/utils/validateInput";
 import {TripLink} from "@/components/tripLink";
+import {Edit2, Plus, Trash} from "lucide-react-native";
 
 enum ModalEnum {
     NEW_LINK =0,
@@ -119,7 +120,7 @@ export function Details({tripId} : {tripId:string}) {
     function confirmLinkDeletion() {
         return Alert.alert(
             "Deletar o link da viagem",
-            `Tem certeza que quer deltar o link "${linkTitle}"?`,
+            `Tem certeza que quer deletar o link "${linkTitle}"?`,
             [
                 {text: "Não",style: "cancel"},
                 {text: "Sim",onPress: () => handleDeleteLink()}
