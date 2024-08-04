@@ -1,6 +1,7 @@
 import {api} from "@/server/api";
 import {Activity} from "@/server/activities-server";
 import {Participant, participantsServer} from "@/server/participants-server";
+import {Link} from "@/server/link-server";
 
 
 export type TripDetails = {
@@ -10,15 +11,18 @@ export type TripDetails = {
     endDate: string;
     activities?: Activity[];
     participants?: Participant[];
+    links?: Link[];
 }
 
 export type TripCreate = Omit<TripDetails, "id" >
 
 async function getById(id: string): Promise<TripDetails> {
+    
     try {
       const {data} = await api.get<TripDetails>(`/Trip/${id}`);
         return data;
     } catch (error) {
+        console.log(error)
       throw error;
     }
 }

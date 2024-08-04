@@ -2,7 +2,7 @@ import {ActivityIndicator, Text, TextProps, TouchableOpacity, TouchableOpacityPr
 import {createContext, ReactNode, useContext} from "react";
 import clsx from "clsx";
 
-type Variants = "primary" | "secondary"
+type Variants = "primary" | "secondary" | "delete"
 
 type ButtonProps =TouchableOpacityProps & {
     variant?: Variants;
@@ -18,7 +18,8 @@ function Button({variant = "primary", isLoading, children, className, ...rest}: 
                 "h-11 flex-row items-center justify-center rounded-lg gap-2 px-2",
                 {
                     "bg-lime-300": variant === "primary",
-                    "bg-zinc-800": variant === "secondary"
+                    "bg-zinc-800": variant === "secondary",
+                    "bg-red-400": variant === "delete",
                 },
                 className
             )}

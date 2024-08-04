@@ -66,7 +66,7 @@ export default function Trip() {
         const trip = await tripServer.getById(tripId);
         const maxLengthDestination = 14
         const destination = trip.name.length > maxLengthDestination ? trip.name.slice(0, maxLengthDestination) + "..." : trip.name;
-        
+        console.log(trip)
         setTripDetails({
             ...trip, 
             when: `${destination} de ${calendarUtils.formatDatesInText({startsAt: dayjs(trip.startDate),  endsAt: dayjs(trip.endDate)})}`

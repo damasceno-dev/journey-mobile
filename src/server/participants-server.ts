@@ -34,7 +34,7 @@ async function getByTripId(tripId: string) : Promise<Promise<Participant[]> | un
         const {data} = await api.get<TripDetails>(`/Trip/${tripId}`);
         return data.participants
     } catch (error) {
-        console.log("Erro ao buscar as atividades da viagem.", error);
+        console.log("Erro ao buscar os participantes da viagem.", error);
         throw error
     }
 }
