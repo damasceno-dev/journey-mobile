@@ -34,7 +34,6 @@ export type TripActivities = {
 
 
 export function Activities({tripDetails} : Props) {
-    console.log(tripDetails)
     const [isCreatingActivity, setIsCreatingActivity] = useState(false);
     const [isLoadingActivities, setIsLoadingActivities] = useState(false)
     const [showModal, setShowModal] = useState(ModalEnum.NONE);

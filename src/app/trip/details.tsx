@@ -1,5 +1,5 @@
 import {Alert, FlatList, Text, View} from "react-native";
-import {useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Link, linksServer} from "@/server/link-server";
 import {Participant, participantsServer} from "@/server/participants-server";
 import {Button} from "@/components/button";
@@ -8,28 +8,39 @@ import {Modal} from "@/components/modal";
 import {Input} from "@/components/input";
 import {validateInput} from "@/utils/validateInput";
 import {TripLink} from "@/components/tripLink";
-import {Edit2, Plus, Trash} from "lucide-react-native";
+import {TripParticipant } from "@/components/tripParticipant";
+import {ArrowRight, AtSign, Edit2, Plus, TableRowsSplit, Trash2, UserRoundPlus} from "lucide-react-native";
+import Loading from "@/components/loading";
+import {GuestData} from "@/components/email";
+import {tripServer} from "@/server/trip-server";
 
 enum ModalEnum {
     NEW_LINK =0,
     EDIT_LINK=1,
     NONE=2,
+    GUESTS = 3  
 }
 
 export function Details({tripId} : {tripId:string}) {
     
-    const [links, setLinks] = useState<Link[]>([]);
-    const [participants, setParticipants] = useState<Participant[]>([]);
     
     const [showLinkModal, setShowLinkModal] = useState(ModalEnum.NONE);
     
+    const [links, setLinks] = useState<Link[]>([]);
     const [linkTitle, setLinkTitle] = useState("");
     const [linkUrl, setLinkUrl] = useState("");
     const [linkId, setLinkId] = useState("");
     
-    const [isCreatingOrEditingLink, setIsCreatingOrEditingLink] = useState(false)
+    const [participants, setParticipants] = useState<Participant[]>([]);
+    const [guestName, setGuestName] = useState("");
+    const [guestEmail, setGuestEmail] = useState("");
+    
+    
+    const [isCreatingOrEditingLink, setIsCreatingOrEditingLink] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     async function getLinks() {
         try {
+            setIsLoading(true);
             const links = await linksServer.getByTripId(tripId);
             if (links) {
                 setLinks(links);
@@ -39,22 +50,29 @@ export function Details({tripId} : {tripId:string}) {
         } catch (error) {
           throw error;
         } finally {
-        
+            setIsLoading(false);
         }
     }
     
     async function getParticipants() {
         try {
+          setIsLoading(true);
           const participants = await participantsServer.getByTripId(tripId);
           if (participants) {
-              setParticipants(participants);
+              // Sort participants by isConfirmed status, confirmed participants first
+              const sortedParticipants = participants.sort((a, b) => {
+                  if (a.isConfirmed && !b.isConfirmed) return -1;
+                  if (!a.isConfirmed && b.isConfirmed) return 1;
+                  return 0;
+              });
+              setParticipants(sortedParticipants);
           } else {
               Alert.alert("Participantes", "Erro ao carregar os participantes da viagem");
           }
         } catch (error) {
           throw error;
         } finally {
-        
+            setIsLoading(false);
         }
     }
 
@@ -112,7 +130,6 @@ export function Details({tripId} : {tripId:string}) {
             console.log(error)
             throw error;
         } finally {
-
             setIsCreatingOrEditingLink(false);
         }
     }
@@ -147,6 +164,61 @@ export function Details({tripId} : {tripId:string}) {
             setIsCreatingOrEditingLink(false);
         }
     }
+
+    async function handleAddParticipant({guestName, guestEmail}: { guestName: string, guestEmail: string }) {
+        if (guestName.trim() === "" || guestEmail.trim() === "") {
+            return Alert.alert("Convidado", "Insira todos campos")
+        }
+        if (!validateInput.email(guestEmail)) {
+            return Alert.alert("Convidado", "E-mail inválido")
+        }
+        if (participants.find(g => g.email.trim() === guestEmail.trim())) {
+            return Alert.alert("Convidado", "Esse e-mail já foi adicionado")
+        }
+        try {
+            setIsLoading(true);
+            await participantsServer.create({
+                tripId,
+                name: guestName,
+                email: guestEmail
+            })
+
+            Alert.alert("Convidado", "Participante convidado!")
+            setShowLinkModal(ModalEnum.NONE); setGuestName("");setGuestEmail("");
+            await getParticipants();
+        } catch (error) {
+            console.log(error);
+            throw error;
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    function confirmParticipantVerify(id: string, name:string) {
+        return Alert.alert(
+            "Confirmar participante na viagem",
+            `Quer confirmar o participante ${name} nessa viagem?`,
+            [
+                {text: "Não",style: "cancel"},
+                {text: "Sim",onPress: () => handleConfirmParticipant(id)}
+            ]
+        );
+    }
+
+    async function handleConfirmParticipant(id: string) {
+        try {
+            setIsLoading(true);
+
+            await participantsServer.confirmTripByParticipantId({tripId: tripId, id: id});
+            Alert.alert("Convidados", "Participante confirmado!");
+            await getParticipants();
+        } catch (error) {
+            console.log(error)
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    }
     
     useEffect(() => {
         getParticipants();
@@ -154,28 +226,54 @@ export function Details({tripId} : {tripId:string}) {
     }, []);
 
 
-
     return (
         <View className="flex-1 mt-10">
-            <Text className="text-zinc-50 text-2xl font-semibold mb-2">Links importantes:</Text>
-            <View className="flex gap-10">
+            <View className="flex-1">
+                <Text className="text-zinc-50 text-4xl py-3 px-1 font-sacramento mx-2">Links importantes:</Text>
+                {isLoading && <Loading/>}
+                <View className="h-1/2">
                 {links.length > 0 ? (
                         <FlatList
                             data={links}
                             keyExtractor={item => item.id}
                             renderItem={({item}) => <TripLink data={item} handleEditLink={() => handleEditLink(item.id)}/>}
+                            contentContainerClassName="gap-4 pb-4"
                         /> ) :
                         (
-                         <Text className="text-zinc-50 font-sacramento text-3xl m-2 p-2">Não existem links cadastrados...</Text>
+                            !isLoading && (<Text className="text-zinc-50 font-sacramento text-3xl m-2 p-2">Não existem links cadastrados...</Text>)
                         )}
+                </View>
 
-                <Button variant="primary" onPress={() => setShowLinkModal(ModalEnum.NEW_LINK)}>
+                <Button className="mt-10" variant="secondary" onPress={() => setShowLinkModal(ModalEnum.NEW_LINK)}>
                     <Plus color={colors.zinc[200]} size={20}></Plus>
                     <Button.Title>Cadastrar novo link</Button.Title>
                 </Button>
             </View>
 
+            <View className="flex-1 border-t border-zinc-800 -mt-10">
+                <Text className="text-zinc-50 text-4xl font-sacramento py-4">Convidados:</Text>
+                {isLoading && <Loading/>}
+                <View className="h-1/2">
+                    {participants.length > 0 ? (
+                            <FlatList
+                                data={participants}
+                                keyExtractor={item => item.id}
+                                renderItem={({item}) => <TripParticipant data={item} handleConfirmParticipant={() => confirmParticipantVerify(item.id, item.name)}/>}
+                                contentContainerClassName="gap-4 pb-4 mb-5"
+                            /> ) :
+                        (
+                            !isLoading && (<Text className="text-zinc-50 font-sacramento text-3xl m-2 p-2">Não existem participantes cadastrados...</Text>)
+                        )}
+                </View>
+                <View className="flex-1">
+                    <Button className="" variant="primary" onPress={() => setShowLinkModal(ModalEnum.GUESTS)}>
+                        <UserRoundPlus color={colors.zinc[950]} size={20}/>
+                        <Button.Title>Convidar participante</Button.Title>
+                    </Button>
+                </View>
 
+            </View>
+            
             <Modal
                 title="Cadastrar link"
                 subtitle="Todos convidados podem visualizar os links importantes."
@@ -232,8 +330,42 @@ export function Details({tripId} : {tripId:string}) {
                         <Button.Title>Salvar edição</Button.Title>
                     </Button>
                     <Button variant="delete" isLoading={isCreatingOrEditingLink} onPress={confirmLinkDeletion}>
-                        <Trash color={colors.zinc[950]} size={20}></Trash>
+                        <Trash2 color={colors.zinc[950]} size={20}></Trash2>
                         <Button.Title>Deletar link</Button.Title>
+                    </Button>
+                </View>
+            </Modal>
+            
+            <Modal
+                title="Convidar participantes"
+                subtitle="Adicione particiipantes à sua viagem."
+                visible={showLinkModal === ModalEnum.GUESTS}
+                onClose={() => setShowLinkModal(ModalEnum.NONE)}
+            >
+                <View className="gap-4 mt-4">
+                    <Input variant="secondary">
+                        <UserRoundPlus color={colors.zinc[400]} size={20}></UserRoundPlus>
+                        <Input.Field
+                            placeholder="Digite o nome do convidado"
+                            keyboardType="email-address"
+                            onChangeText={setGuestName}
+                            value={guestName}
+                            autoCorrect={false}
+                        ></Input.Field>
+                    </Input>
+                    <Input variant="secondary">
+                        <AtSign color={colors.zinc[400]} size={20}></AtSign>
+                        <Input.Field
+                            placeholder="Digite o email do convidado"
+                            keyboardType="email-address"
+                            onChangeText={(text) => setGuestEmail(text.toLowerCase())}
+                            value={guestEmail}
+                            autoCorrect={false}
+                        ></Input.Field>
+                    </Input>
+                    <Button onPress={() => handleAddParticipant({guestName, guestEmail})} variant="secondary" isLoading={isLoading}>
+                        <Button.Title>Adicionar</Button.Title>
+                        <Plus color={colors.zinc[400]} size={20}></Plus>
                     </Button>
                 </View>
             </Modal>

@@ -46,7 +46,7 @@ export default function Index() {
     const [selectedDates, setSelectedDates] = useState({} as DatesSelected)
     const [showModal, setShowModal] = useState(ModalEnum.NONE);
     const [destination, setDestination] = useState("");
-    const [guestsToInvite, setGuestsToInvite] = useState<Participant[]>([])
+    const [participantsToInvite, setParticipantsToInvite] = useState<Participant[]>([])
     const [guestName, setGuestName] = useState("");
     const [guestEmail, setGuestEmail] = useState("");
     
@@ -75,7 +75,7 @@ export default function Index() {
     }
     
     function handleGuestToRemove(guestToRemoveEmail: string) {
-        setGuestsToInvite(prevState => prevState.filter(g => g.email!== guestToRemoveEmail));
+        setParticipantsToInvite(prevState => prevState.filter(g => g.email!== guestToRemoveEmail));
     }
     
     function handleGuestToAdd({guestName, guestEmail} : {guestName: string,  guestEmail: string}) {
@@ -85,20 +85,20 @@ export default function Index() {
         if (!validateInput.email(guestEmail)) {
             return Alert.alert("Convidado", "E-mail inválido")
         }
-        if (guestsToInvite.find(g => g.email.trim() === guestEmail.trim())) {
+        if (participantsToInvite.find(g => g.email.trim() === guestEmail.trim())) {
             return Alert.alert("Convidado", "Esse e-mail já foi adicionado")
         }
         
         
-        setGuestsToInvite(prevState => [...prevState, {name: guestName,  email: guestEmail}])
+        setParticipantsToInvite(prevState => [...prevState, {id: "", name: guestName,  email: guestEmail}])
         setGuestName(""); setGuestEmail("");
     }
     
     function handleGuestsText() {
-        if (guestsToInvite.length === 1) {
+        if (participantsToInvite.length === 1) {
             return "1 pessoa convidada";
-        } else if (guestsToInvite.length > 1) {
-            return `${guestsToInvite.length} pessoas convidadas`;
+        } else if (participantsToInvite.length > 1) {
+            return `${participantsToInvite.length} pessoas convidadas`;
         } else {
             return "";
         }
@@ -117,17 +117,12 @@ export default function Index() {
     async function createTrip() {
         try {
           setIsCreatingTrip(true);
-          
-          console.log( destination,
-                         selectedDates.startsAt!.dateString,
-                         selectedDates.endsAt!.dateString,
-                         guestsToInvite)
             // "T23:59:59Z"
           const newTrip = await tripServer.create({
               name: destination,
               startDate: selectedDates.startsAt!.dateString,
               endDate: selectedDates.endsAt!.dateString + "T23:59:59Z",
-              participants: guestsToInvite
+              participants: participantsToInvite
           })
             
             Alert.alert("Nova viagem", "Viagem criada com sucesso!", [
@@ -135,7 +130,6 @@ export default function Index() {
             ])
         } catch (error) {
           console.log(error);
-          setIsCreatingTrip(false)
         } finally {
             setIsCreatingTrip(false)
         }
@@ -149,7 +143,6 @@ export default function Index() {
           }
           
           const trip = await tripServer.getById(tripId)
-           console.log(trip)
            if (trip) {
                return router.navigate(`trip/${trip.id}`)
            } 
@@ -255,8 +248,8 @@ export default function Index() {
             >
                 <View className="my-2 bg-zinc-800 rounded-xl flex flex-row flex-wrap gap-1.5 border-b border-zinc-500 p-5">
 
-                    {guestsToInvite.length > 0 ? (
-                        guestsToInvite.map(g => (
+                    {participantsToInvite.length > 0 ? (
+                        participantsToInvite.map(g => (
                             <GuestData key={g.email} name={g.name} email={g.email} onRemove={() => handleGuestToRemove(g.email)}/>
                         ))
                         

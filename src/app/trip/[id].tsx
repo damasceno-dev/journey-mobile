@@ -16,6 +16,7 @@ import {DateData} from "react-native-calendars";
 import {Calendar} from "@/components/calendar";
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import {tripStorage} from "@/storage/trips";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -127,14 +128,28 @@ export default function Trip() {
         }
     }
     
+    async function handleRemoveTrip() {
+        try {
+          Alert.alert("Remover viagem", "Tem certeza que deseja remover a viagem do seu dispositivo?", [
+              {text: "Não", style: "cancel"},
+              {text: "Sim", onPress: async () => {await tripStorage.remove(); router.navigate("/")}}
+          ]);
+        } catch (error) {
+            console.log(error)
+          throw error;
+        } finally {
+        
+        }
+    }
+    
     useEffect(() => {
-        getTripDetails();
+        getTripDetails(); 
     }, [])
     
     if(isLoadingTrip) {
         return <Loading/>
     }
-    
+
     return (
         <View className="flex-1 px-5 pt-16">
             <Input variant="tertiary">
@@ -202,6 +217,9 @@ export default function Trip() {
                     </Input>
                     <Button onPress={handleUpdateTrip} isLoading={isUpdatingTrip}>
                         <Button.Title>Atualizar</Button.Title>
+                    </Button>
+                    <Button variant="delete" onPress={handleRemoveTrip} isLoading={isUpdatingTrip}>
+                        <Button.Title>Remover viagem</Button.Title>
                     </Button>
                 </View>
             </Modal>

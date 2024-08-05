@@ -3,17 +3,13 @@ import {TripDetails} from "@/server/trip-server";
 
 
 export type Participant = {
-    id?: string;
+    id: string;
     name: string;
     email: string;
     isConfirmed?: boolean;
 }
 
 type ParticipantCreate = Omit<Participant, "id"> & {
-    tripId: string
-}
-
-type ParticipantConfirm = Participant & {
     tripId: string
 }
 
@@ -29,7 +25,7 @@ async function create({tripId, name, email} : ParticipantCreate) {
     }
 }
 
-async function getByTripId(tripId: string) : Promise<Promise<Participant[]> | undefined>{
+async function getByTripId(tripId: string) {
     try {
         const {data} = await api.get<TripDetails>(`/Trip/${tripId}`);
         return data.participants
@@ -39,7 +35,7 @@ async function getByTripId(tripId: string) : Promise<Promise<Participant[]> | un
     }
 }
 
-async function confirmTripByParticipantId({tripId,id}: ParticipantConfirm) {
+async function confirmTripByParticipantId({tripId,id}: {tripId: string,  id: string}) {
     try {
         await api.put(`/TripParticipants/${tripId}/confirm/${id}`)
     } catch (error) {
